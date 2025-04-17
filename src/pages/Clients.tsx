@@ -21,9 +21,22 @@ import {
   Filter,
   Eye,
   Pencil,
-  Flag
+  Trash2,
+  AlertTriangle
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 
 const clients = [
   {
@@ -93,6 +106,31 @@ function getStatusBadge(status: string) {
 }
 
 export default function Clients() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  // Filter clients based on search query
+  const filteredClients = clients.filter(client => 
+    client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    client.country.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    client.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleDeleteClient = (id: string, name: string) => {
+    // In a real application, this would send a delete request to a backend API
+    console.log("Deleting client:", id);
+    
+    // For now, we're just mocking the successful deletion
+    toast({
+      title: "Client deleted",
+      description: `${name} has been removed from the system.`,
+    });
+
+    // This would be handled properly with state management
+    // For now, we're just showing the toast without actually removing the client
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -102,7 +140,10 @@ export default function Clients() {
             Manage client information and requests
           </p>
         </div>
-        <Button className="bg-hwf-purple hover:bg-hwf-purple-dark">
+        <Button 
+          className="bg-hwf-purple hover:bg-hwf-purple-dark"
+          onClick={() => navigate("/clients/add")}
+        >
           <UserPlus className="mr-2 h-4 w-4" />
           Add Client
         </Button>
@@ -120,6 +161,8 @@ export default function Clients() {
                 type="search"
                 placeholder="Search clients..."
                 className="pl-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
             <Button variant="outline">
@@ -142,29 +185,70 @@ export default function Clients() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {clients.map((client) => (
-                  <TableRow key={client.id}>
-                    <TableCell className="font-medium">{client.id}</TableCell>
-                    <TableCell>{client.name}</TableCell>
-                    <TableCell>{client.country}</TableCell>
-                    <TableCell>{getStatusBadge(client.status)}</TableCell>
-                    <TableCell>{client.housing}</TableCell>
-                    <TableCell>{client.children}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Flag className="h-4 w-4" />
-                        </Button>
-                      </div>
+                {filteredClients.length > 0 ? (
+                  filteredClients.map((client) => (
+                    <TableRow key={client.id}>
+                      <TableCell className="font-medium">{client.id}</TableCell>
+                      <TableCell>{client.name}</TableCell>
+                      <TableCell>{client.country}</TableCell>
+                      <TableCell>{getStatusBadge(client.status)}</TableCell>
+                      <TableCell>{client.housing}</TableCell>
+                      <TableCell>{client.children}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => navigate(`/clients/view/${client.id}`)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => navigate(`/clients/edit/${client.id}`)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle className="flex items-center gap-2">
+                                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                                  Delete Client
+                                </DialogTitle>
+                                <DialogDescription>
+                                  Are you sure you want to delete {client.name}? This action cannot be undone.
+                                </DialogDescription>
+                              </DialogHeader>
+                              <DialogFooter>
+                                <Button variant="outline" onClick={() => document.querySelector('[data-state="open"] button[aria-label="Close"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))}>
+                                  Cancel
+                                </Button>
+                                <Button variant="destructive" onClick={() => handleDeleteClient(client.id, client.name)}>
+                                  Delete Client
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center">
+                      No clients found matching your search.
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </div>
