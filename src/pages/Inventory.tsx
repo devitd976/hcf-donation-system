@@ -1,4 +1,6 @@
 
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -22,9 +24,26 @@ import {
   Eye, 
   Pencil, 
   Trash2,
-  ShoppingBag
+  ShoppingBag,
+  BarChart3
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { StockControlDialog } from "@/components/inventory/StockControlDialog";
 
 const inventoryItems = [
   {
@@ -35,6 +54,7 @@ const inventoryItems = [
     status: "available",
     location: "Warehouse A",
     dateAdded: "2023-10-15",
+    quantity: 1,
   },
   {
     id: "INV002",
@@ -44,6 +64,7 @@ const inventoryItems = [
     status: "reserved",
     location: "Warehouse B",
     dateAdded: "2023-11-02",
+    quantity: 1,
   },
   {
     id: "INV003",
@@ -53,6 +74,7 @@ const inventoryItems = [
     status: "available",
     location: "Warehouse A",
     dateAdded: "2023-11-10",
+    quantity: 2,
   },
   {
     id: "INV004",
@@ -62,6 +84,7 @@ const inventoryItems = [
     status: "available",
     location: "Warehouse C",
     dateAdded: "2023-12-05",
+    quantity: 1,
   },
   {
     id: "INV005",
@@ -71,6 +94,7 @@ const inventoryItems = [
     status: "assigned",
     location: "Warehouse A",
     dateAdded: "2024-01-15",
+    quantity: 4,
   },
 ];
 
@@ -88,6 +112,27 @@ function getStatusBadge(status: string) {
 }
 
 export default function Inventory() {
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [isStockDialogOpen, setIsStockDialogOpen] = useState(false);
+
+  const filteredItems = inventoryItems.filter(item => 
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const availableItems = inventoryItems.filter(item => item.status === "available").length;
+  const reservedItems = inventoryItems.filter(item => item.status === "reserved").length;
+  const assignedItems = inventoryItems.filter(item => item.status === "assigned").length;
+  const totalItems = inventoryItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  const openStockControl = (item) => {
+    setSelectedItem(item);
+    setIsStockDialogOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -97,13 +142,26 @@ export default function Inventory() {
             Manage donation items and stock levels
           </p>
         </div>
-        <Button className="bg-hwf-purple hover:bg-hwf-purple-dark">
+        <Button 
+          className="bg-hwf-purple hover:bg-hwf-purple-dark"
+          onClick={() => navigate("/inventory/add")}
+        >
           <PackagePlus className="mr-2 h-4 w-4" />
           Add Item
         </Button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Total Items
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalItems}</div>
+          </CardContent>
+        </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -111,7 +169,7 @@ export default function Inventory() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">216</div>
+            <div className="text-2xl font-bold">{availableItems}</div>
           </CardContent>
         </Card>
         <Card>
@@ -121,7 +179,7 @@ export default function Inventory() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">42</div>
+            <div className="text-2xl font-bold">{reservedItems}</div>
           </CardContent>
         </Card>
         <Card>
@@ -131,7 +189,7 @@ export default function Inventory() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">70</div>
+            <div className="text-2xl font-bold">{assignedItems}</div>
           </CardContent>
         </Card>
       </div>
@@ -148,6 +206,8 @@ export default function Inventory() {
                 type="search"
                 placeholder="Search inventory..."
                 className="pl-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
             <Button variant="outline">
@@ -164,40 +224,73 @@ export default function Inventory() {
                   <TableHead>Item</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Condition</TableHead>
+                  <TableHead>Quantity</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {inventoryItems.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.id}</TableCell>
-                    <TableCell>{item.name}</TableCell>
-                    <TableCell>{item.category}</TableCell>
-                    <TableCell>{item.condition}</TableCell>
-                    <TableCell>{getStatusBadge(item.status)}</TableCell>
-                    <TableCell>{item.location}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <ShoppingBag className="h-4 w-4" />
-                        </Button>
-                      </div>
+                {filteredItems.length > 0 ? (
+                  filteredItems.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium">{item.id}</TableCell>
+                      <TableCell>{item.name}</TableCell>
+                      <TableCell>{item.category}</TableCell>
+                      <TableCell>{item.condition}</TableCell>
+                      <TableCell>{item.quantity}</TableCell>
+                      <TableCell>{getStatusBadge(item.status)}</TableCell>
+                      <TableCell>{item.location}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => navigate(`/inventory/view/${item.id}`)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => navigate(`/inventory/edit/${item.id}`)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => openStockControl(item)}
+                          >
+                            <BarChart3 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={8} className="h-24 text-center">
+                      No items found.
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </div>
         </CardContent>
       </Card>
+
+      {selectedItem && (
+        <StockControlDialog
+          item={selectedItem}
+          open={isStockDialogOpen}
+          onOpenChange={setIsStockDialogOpen}
+        />
+      )}
     </div>
   );
 }

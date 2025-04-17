@@ -1,4 +1,6 @@
 
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -100,6 +102,21 @@ function getStatusBadge(status: string) {
 }
 
 export default function Requests() {
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  const filteredRequests = requests.filter(request => 
+    request.client.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    request.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    request.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (request.team && request.team.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+  
+  const pendingRequests = requests.filter(req => req.status === "pending").length;
+  const processingRequests = requests.filter(req => req.status === "processing").length;
+  const scheduledRequests = requests.filter(req => req.status === "scheduled").length;
+  const completedToday = requests.filter(req => req.status === "completed" && req.date === new Date().toISOString().split('T')[0]).length;
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -109,7 +126,10 @@ export default function Requests() {
             Manage team requests and assignments
           </p>
         </div>
-        <Button className="bg-hwf-purple hover:bg-hwf-purple-dark">
+        <Button 
+          className="bg-hwf-purple hover:bg-hwf-purple-dark"
+          onClick={() => navigate("/requests/add")}
+        >
           <ClipboardPlus className="mr-2 h-4 w-4" />
           New Request
         </Button>
@@ -123,7 +143,7 @@ export default function Requests() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8</div>
+            <div className="text-2xl font-bold">{pendingRequests}</div>
           </CardContent>
         </Card>
         <Card>
@@ -133,7 +153,7 @@ export default function Requests() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">5</div>
+            <div className="text-2xl font-bold">{processingRequests}</div>
           </CardContent>
         </Card>
         <Card>
@@ -143,7 +163,7 @@ export default function Requests() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
+            <div className="text-2xl font-bold">{scheduledRequests}</div>
           </CardContent>
         </Card>
         <Card>
@@ -153,7 +173,7 @@ export default function Requests() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2</div>
+            <div className="text-2xl font-bold">{completedToday}</div>
           </CardContent>
         </Card>
       </div>
@@ -170,6 +190,8 @@ export default function Requests() {
                 type="search"
                 placeholder="Search requests..."
                 className="pl-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
             <Button variant="outline">
@@ -193,41 +215,64 @@ export default function Requests() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {requests.map((request) => (
-                  <TableRow key={request.id}>
-                    <TableCell className="font-medium">{request.id}</TableCell>
-                    <TableCell>
-                      <div>{request.client}</div>
-                      <div className="text-xs text-muted-foreground">{request.clientId}</div>
-                    </TableCell>
-                    <TableCell>{request.type}</TableCell>
-                    <TableCell>{request.team}</TableCell>
-                    <TableCell>
-                      {request.assignedTo || (
-                        <span className="text-muted-foreground text-sm">Unassigned</span>
-                      )}
-                    </TableCell>
-                    <TableCell>{getStatusBadge(request.status)}</TableCell>
-                    <TableCell>{request.date}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Users className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          {request.status !== "completed" ? (
-                            <CheckCircle className="h-4 w-4" />
-                          ) : (
-                            <XCircle className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
+                {filteredRequests.length > 0 ? (
+                  filteredRequests.map((request) => (
+                    <TableRow key={request.id}>
+                      <TableCell className="font-medium">{request.id}</TableCell>
+                      <TableCell>
+                        <div>{request.client}</div>
+                        <div className="text-xs text-muted-foreground">{request.clientId}</div>
+                      </TableCell>
+                      <TableCell>{request.type}</TableCell>
+                      <TableCell>{request.team || "—"}</TableCell>
+                      <TableCell>
+                        {request.assignedTo || (
+                          <span className="text-muted-foreground text-sm">Unassigned</span>
+                        )}
+                      </TableCell>
+                      <TableCell>{getStatusBadge(request.status)}</TableCell>
+                      <TableCell>{request.date}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => navigate(`/requests/view/${request.id}`)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => navigate(`/requests/assign-team/${request.id}`)}
+                          >
+                            <Users className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => alert(request.status !== "completed" ? "Marking as complete" : "Marking as incomplete")}
+                          >
+                            {request.status !== "completed" ? (
+                              <CheckCircle className="h-4 w-4" />
+                            ) : (
+                              <XCircle className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={8} className="h-24 text-center">
+                      No requests found.
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </div>
