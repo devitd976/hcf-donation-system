@@ -1,4 +1,6 @@
 
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,8 +17,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { UserPlus, Search, Filter, Eye, Pencil, Calendar } from "lucide-react";
+import { 
+  UserPlus, 
+  Search, 
+  Filter, 
+  Eye, 
+  Pencil, 
+  Calendar,
+  XCircle,
+  CheckCircle
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 
 const volunteers = [
   {
@@ -80,6 +92,29 @@ function getStatusBadge(status: string) {
 }
 
 export default function Volunteers() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Filter volunteers based on search query
+  const filteredVolunteers = volunteers.filter(volunteer => 
+    volunteer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    volunteer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    volunteer.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
+  const handleStatusToggle = (volunteerId: string, currentStatus: string) => {
+    const newStatus = currentStatus === "active" ? "inactive" : "active";
+    
+    // In a real app, this would update the database
+    console.log(`Changing volunteer ${volunteerId} status to ${newStatus}`);
+    
+    toast({
+      title: "Status Updated",
+      description: `Volunteer status has been changed to ${newStatus}.`,
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -89,7 +124,10 @@ export default function Volunteers() {
             Manage volunteer information and assignments
           </p>
         </div>
-        <Button className="bg-hwf-purple hover:bg-hwf-purple-dark">
+        <Button 
+          className="bg-hwf-purple hover:bg-hwf-purple-dark"
+          onClick={() => navigate("/volunteers/add")}
+        >
           <UserPlus className="mr-2 h-4 w-4" />
           Add Volunteer
         </Button>
@@ -107,6 +145,8 @@ export default function Volunteers() {
                 type="search"
                 placeholder="Search volunteers..."
                 className="pl-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
             <Button variant="outline">
@@ -129,40 +169,67 @@ export default function Volunteers() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {volunteers.map((volunteer) => (
-                  <TableRow key={volunteer.id}>
-                    <TableCell className="font-medium">{volunteer.id}</TableCell>
-                    <TableCell>{volunteer.name}</TableCell>
-                    <TableCell>
-                      <div>{volunteer.email}</div>
-                      <div className="text-xs text-muted-foreground">{volunteer.phone}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {volunteer.skills.map((skill) => (
-                          <Badge key={skill} variant="outline" className="text-xs">
-                            {skill}
-                          </Badge>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell>{volunteer.availability}</TableCell>
-                    <TableCell>{getStatusBadge(volunteer.status)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Calendar className="h-4 w-4" />
-                        </Button>
-                      </div>
+                {filteredVolunteers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center">
+                      No volunteers found matching your search.
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  filteredVolunteers.map((volunteer) => (
+                    <TableRow key={volunteer.id}>
+                      <TableCell className="font-medium">{volunteer.id}</TableCell>
+                      <TableCell>{volunteer.name}</TableCell>
+                      <TableCell>
+                        <div>{volunteer.email}</div>
+                        <div className="text-xs text-muted-foreground">{volunteer.phone}</div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {volunteer.skills.map((skill) => (
+                            <Badge key={skill} variant="outline" className="text-xs">
+                              {skill}
+                            </Badge>
+                          ))}
+                        </div>
+                      </TableCell>
+                      <TableCell>{volunteer.availability}</TableCell>
+                      <TableCell>{getStatusBadge(volunteer.status)}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => navigate(`/volunteers/view/${volunteer.id}`)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => navigate(`/volunteers/edit/${volunteer.id}`)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => handleStatusToggle(volunteer.id, volunteer.status)}
+                          >
+                            {volunteer.status === "active" ? (
+                              <XCircle className="h-4 w-4 text-red-500" />
+                            ) : (
+                              <CheckCircle className="h-4 w-4 text-green-500" />
+                            )}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>

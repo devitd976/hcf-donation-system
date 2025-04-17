@@ -10,6 +10,9 @@ import AddClient from "./pages/AddClient";
 import EditClient from "./pages/EditClient";
 import ViewClient from "./pages/ViewClient";
 import Volunteers from "./pages/Volunteers";
+import AddVolunteer from "./pages/AddVolunteer";
+import EditVolunteer from "./pages/EditVolunteer";
+import ViewVolunteer from "./pages/ViewVolunteer";
 import Inventory from "./pages/Inventory";
 import Requests from "./pages/Requests";
 import Login from "./pages/Login";
@@ -32,7 +35,12 @@ const App = () => (
           <Route path="/clients/add" element={<Layout><AddClient /></Layout>} />
           <Route path="/clients/edit/:id" element={<Layout><EditClient /></Layout>} />
           <Route path="/clients/view/:id" element={<Layout><ViewClient /></Layout>} />
+          
           <Route path="/volunteers" element={<Layout><Volunteers /></Layout>} />
+          <Route path="/volunteers/add" element={<Layout><AddVolunteer /></Layout>} />
+          <Route path="/volunteers/edit/:id" element={<Layout><EditVolunteer /></Layout>} />
+          <Route path="/volunteers/view/:id" element={<Layout><ViewVolunteer /></Layout>} />
+          
           <Route path="/inventory" element={<Layout><Inventory /></Layout>} />
           <Route path="/requests" element={<Layout><Requests /></Layout>} />
           
